@@ -11,6 +11,7 @@ use mailparse::*;
 
 #[derive(Debug)]
 pub enum MailEntryError {
+    NoData,
     IOError(std::io::Error),
     ParseError(MailParseError),
     DateError(&'static str),
@@ -19,6 +20,7 @@ pub enum MailEntryError {
 impl fmt::Display for MailEntryError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
+            MailEntryError::NoData           => write!(f, "No Data error"),
             MailEntryError::IOError(ref err) => write!(f, "IO error: {}", err),
             MailEntryError::ParseError(ref err) => write!(f, "Parse error: {}", err),
             MailEntryError::DateError(ref msg) => write!(f, "Date error: {}", msg),
@@ -29,6 +31,7 @@ impl fmt::Display for MailEntryError {
 impl error::Error for MailEntryError {
     fn description(&self) -> &str {
         match *self {
+            MailEntryError::NoData  => "No Data",
             MailEntryError::IOError(ref err) => err.description(),
             MailEntryError::ParseError(ref err) => err.description(),
             MailEntryError::DateError(ref msg) => msg,
@@ -40,6 +43,7 @@ impl error::Error for MailEntryError {
             MailEntryError::IOError(ref err) => Some(err),
             MailEntryError::ParseError(ref err) => Some(err),
             MailEntryError::DateError(_) => None,
+            _ => None
         }
     }
 }
@@ -91,7 +95,10 @@ impl MailEntry {
 
     pub fn parsed(&mut self) -> Result<ParsedMail, MailEntryError> {
         self.read_data()?;
-        parse_mail(self.data.as_ref().unwrap()).map_err(MailEntryError::ParseError)
+        self.data
+            .as_ref()
+            .ok_or_else(|| MailEntryError::NoData)
+            .and_then(|d| parse_mail(d.to_vec()).map_err(MailEntryError::ParseError))
     }
 
     pub fn headers(&mut self) -> Result<Vec<MailHeader>, MailEntryError> {
