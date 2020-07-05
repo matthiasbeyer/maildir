@@ -1,0 +1,14 @@
+image: nixos/latest
+repositories:
+  nixpkgs: https://nixos.org/channels/nixos-20.03
+sources:
+  - https://git.sr.ht/~matthiasbeyer/maildir
+tasks:
+  - build: |
+      cd maildir
+      nix-shell ./shell.nix --run "cargo build --all --all-features"
+triggers:
+  - action: email
+    condition: always
+    to: mail@beyermatthias.de
+
