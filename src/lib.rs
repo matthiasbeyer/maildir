@@ -246,6 +246,10 @@ impl Iterator for MailEntries {
             };
         }
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.readdir.as_ref().map(|rd| rd.size_hint()).unwrap_or((0, None))
+    }
 }
 
 #[derive(Debug)]
